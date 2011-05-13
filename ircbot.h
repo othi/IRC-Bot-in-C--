@@ -26,11 +26,13 @@ public:
     void setPort(string port) { this->port = port; }
 
     void Connect();
+    void Send(string msg);
     void Run();
     void Parse(string msg);
-    void Send(string msg);
     void Login();
-
+    void Ping(string ping_id);
+    void Perform();
+    void Join(string channel, string key = "");
 private:
     bool connected;
 
@@ -40,6 +42,8 @@ private:
     string port;
 
     int server_socket;
+
+    bool performed;
 };
 
 #endif // IRCBOT_H

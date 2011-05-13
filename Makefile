@@ -10,10 +10,10 @@
 
 CC            = gcc
 CXX           = g++
-CFLAGS        = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
-CXXFLAGS      = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
+CFLAGS        = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES) -g
+CXXFLAGS      = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES) -g
 LINK          = g++
-LFLAGS        = -Wl,-O1
+LFLAGS        = -Wl,-O1 -g
 LIBS          = $(SUBLIBS)  -L/usr/lib -lpthread 
 AR            = ar cqs
 RANLIB        = 
@@ -74,7 +74,7 @@ all: $(TARGET)
 $(TARGET):  $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
-clean:compiler_clean 
+clean: 
 	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) *~ core *.core
 

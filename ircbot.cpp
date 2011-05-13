@@ -2,7 +2,6 @@
 
 IRCBot::IRCBot()
 {
-    this->connected = false;
 }
 
 IRCBot::IRCBot(string nick, string user, string server, string port)
@@ -12,7 +11,8 @@ IRCBot::IRCBot(string nick, string user, string server, string port)
     setServer(server);
     setPort(port);
 
-    IRCBot();
+    this->connected = false;
+    this->performed = false;
 }
 
 void IRCBot::Connect()
@@ -69,10 +69,21 @@ void IRCBot::Connect()
     freeaddrinfo(result);           /* No longer needed */
 
 
+    this->connected = true;
     server_socket = sockfd;
 
     Run();
 }
+
+void IRCBot::Send (string msg)
+{
+    msg.append(CRLF);
+    if (send(server_socket, msg.c_str(), msg.length(), 0) == (int) msg.length())
+        cout << "> " << msg;
+    else
+        cout << "Message not sent completely: " << msg;
+}
+
 
 void IRCBot::Run()
 {
@@ -89,7 +100,10 @@ void IRCBot::Run()
         {
             string msg1 = msg.substr(0, msg.find(CRLF, 0));
             Parse(msg1);
-            msg = msg.substr(msg1.length()+2);
+            if (msg.length() - msg1.length() > 2)
+                msg = msg.substr(msg1.length()+2);
+            else
+                break;
         }
         while (msg.length() > 1);
 
@@ -103,6 +117,15 @@ void IRCBot::Parse (string msg)
 {
     cout << "< " << msg << endl;
 
+    if (msg.substr(0, 4) == "PING")
+    {
+        Ping(msg.substr(5));
+    }
+    else if (msg.substr(0, 1) == ":")
+    {
+        if (!performed)
+            Perform();
+    }
 
 }
 
@@ -117,11 +140,28 @@ void IRCBot::Login ()
 }
 
 
-void IRCBot::Send (string msg)
+void IRCBot::Ping (string ping_id)
 {
-    msg.append(CRLF);
-    if (send(server_socket, msg.c_str(), msg.length(), 0) == (int) msg.length())
-        cout << "> " << msg;
-    else
-        cout << "Message not sent completely: " << msg;
+    string s("PONG ");
+    s += ping_id;
+
+    Send(s);
+}
+
+void IRCBot::Perform()
+{
+    Join("#othi");
+    performed = true;
+}
+
+void IRCBot::Join(string channel, string key)
+{
+    string s;
+    s = "JOIN "+channel;
+
+    if (key != "")
+        s.append(" "+key);
+
+    Send(s);
+
 }
