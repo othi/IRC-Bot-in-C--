@@ -28,6 +28,8 @@ public:
     void Connect();
     void Run();
     void Parse(string msg);
+    void Send(string msg);
+    void Login();
 
 private:
     bool connected;

@@ -76,6 +76,8 @@ void IRCBot::Connect()
 
 void IRCBot::Run()
 {
+    Login();
+
     char buf[1024];
 
     memset(buf, 0, 1024);
@@ -100,4 +102,26 @@ void IRCBot::Run()
 void IRCBot::Parse (string msg)
 {
     cout << "< " << msg << endl;
+
+
+}
+
+void IRCBot::Login ()
+{
+    string s;
+    s = "NICK " + this->nick;
+    Send(s);
+
+    s = "USER " + this->user + " 0 * :" + this->user;
+    Send(s);
+}
+
+
+void IRCBot::Send (string msg)
+{
+    msg.append(CRLF);
+    if (send(server_socket, msg.c_str(), msg.length(), 0) == (int) msg.length())
+        cout << "> " << msg;
+    else
+        cout << "Message not sent completely: " << msg;
 }
