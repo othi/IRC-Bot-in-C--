@@ -216,7 +216,7 @@ void IRCBot::OnPrivmsg(string nick, string hostmask, string args)
     string message = args.substr(target.length()+2);
 
     if (target == "#othi" && message == "!botping")
-        Privmsg(target, nick+": Pong!");
+        Privmsg(target, Bold(nick)+": Pong!");
 }
 
 void IRCBot::OnNotice(string nick, string hostmask, string args)
@@ -256,4 +256,17 @@ void IRCBot::Quit(string message)
 void IRCBot::Disconnect()
 {
     close(server_socket);
+}
+
+string IRCBot::Color(string text, string fg, string bg)
+{
+    if (bg != "")
+        bg = "," + bg;
+
+    return COLOR + fg + bg + text + COLOR;
+}
+
+string IRCBot::Bold(string text)
+{
+    return BOLD + text + BOLD;
 }
