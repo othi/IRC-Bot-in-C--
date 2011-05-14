@@ -116,7 +116,7 @@ void IRCBot::Run()
             if (!msg1[i].empty())
             {
                 // handle case when we didn't get the whole line
-                if (i == msg1.size()-1 && msg1[i][msg1[i].length()-1] != '\n')
+                if (i == (int)msg1.size()-1 && msg1[i][msg1[i].length()-1] != '\n')
                 {
                     dangling_msg = msg1[i];
                     break;
@@ -164,6 +164,20 @@ void IRCBot::Parse (string msg)
             OnNotice(nick, hostmask, args);
         else if (event == "433")
             OnNickInUse(tokens[3]);
+        else if (event == "332")
+            OnInitialTopic(args);
+        else if (event == "TOPIC")
+            OnTopic(nick, hostmask, args);
+        else if (event == "353")
+            OnInitialUsers(args);
+        else if (event == "MODE")
+            OnMode(nick, hostmask, args);
+        else if (event == "QUIT")
+            OnQuit(nick, hostmask, args);
+        else if (event == "PART")
+            OnPart(nick, hostmask, args);
+        else if (event == "KICK")
+            OnKick(nick, hostmask, args);
     }
 }
 
@@ -215,8 +229,11 @@ void IRCBot::OnPrivmsg(string nick, string hostmask, string args)
     string target = args.substr(0, args.find(' '));
     string message = args.substr(target.length()+2);
 
-    if (target == "#othi" && message == "!botping")
+    if (target == "#othi" && message == ".ping")
         Privmsg(target, Bold(nick)+": Pong!");
+
+    else if (message == ".chaninfo")
+        ChanInfo(target);
 }
 
 void IRCBot::OnNotice(string nick, string hostmask, string args)
@@ -230,7 +247,183 @@ void IRCBot::OnJoin(string nick, string hostname, string args)
 {
     string chan = args;
 
-    Privmsg(chan, "Hi "+nick+"!");
+    if (nick == this->nick)
+    {
+        struct schannel _chan;
+        _chan.name = chan;
+        _chan.topic = "";
+        _chan.modes = "";
+        _chan.ops = set<string>();
+        _chan.peons = set<string>();
+        _chan.users = set<string>();
+
+        channels.insert(channel_map::value_type(chan, _chan));
+    }
+    else
+    {
+        struct schannel* _chan = &channels.find(chan)->second;
+        _chan->users.insert(nick);
+        Privmsg(chan, "Hi "+nick+"!");
+    }
+}
+
+void IRCBot::OnPart(string nick, string hostname, string args)
+{
+    vector<string> tokens = Common::split(args, ' ');
+    string chan = tokens[0];
+
+    string message = args.substr(chan.length()+2);
+
+    if (nick == this->nick)
+    {
+        channels.erase(chan);
+    }
+    else
+    {
+        struct schannel* _chan = &channels.find(chan)->second;
+        _chan->users.erase(nick);
+        _chan->peons.erase(nick);
+        _chan->ops.erase(nick);
+    }
+}
+
+void IRCBot::OnQuit(string nick, string hostname, string args)
+{
+    string message = args.substr(1);
+
+    map<string, schannel>::iterator it;
+    for (it = channels.begin(); it != channels.end(); it++)
+    {
+        struct schannel* _chan = &it->second;
+        _chan->users.erase(nick);
+        _chan->peons.erase(nick);
+        _chan->ops.erase(nick);
+    }
+}
+
+void IRCBot::OnKick(string nick, string hostname, string args)
+{
+    vector<string> tokens = Common::split(args, ' ');
+    string chan = tokens[0];
+    string knick = tokens[1];
+    string message = args.substr(chan.length()+knick.length()+3);
+
+    if (knick == this->nick)
+    {
+        channels.erase(chan);
+    }
+    else
+    {
+        struct schannel* _chan = &channels.find(chan)->second;
+        _chan->users.erase(nick);
+        _chan->peons.erase(nick);
+        _chan->ops.erase(nick);
+    }
+}
+
+void IRCBot::OnMode (string nick, string hostname, string args)
+{
+    vector<string> tokens = Common::split(args, ' ');
+
+    string target = tokens[0];
+    if (target == this->nick)
+        return;
+
+    string modes = tokens[1];
+    bool giving = false;
+    int user_pos = 2;
+    for (int i = 0; i < (int)modes.length(); i++)
+    {
+        if (modes[i] == '+')
+        {
+            giving = true;
+            continue;
+        }
+        else if (modes[i] == '-')
+        {
+            giving = false;
+            continue;
+        }
+
+        if (modes[i] == 'o')
+        {
+            if (giving) // gave ops
+                OnOp(nick, hostname, target, tokens[user_pos++]);
+            else
+                OnDeOp(nick, hostname, target, tokens[user_pos++]);
+        }
+        else if (modes[i] == 'v')
+        {
+            if (giving)
+                OnVoice(nick, hostname, target, tokens[user_pos++]);
+            else
+                OnDeVoice(nick, hostname, target, tokens[user_pos++]);
+        }
+    }
+}
+
+void IRCBot::OnOp(string nick,string hostname, string channel, string user)
+{
+    struct schannel* _chan = &channels.find(channel)->second;
+    _chan->ops.insert(user);
+}
+
+void IRCBot::OnDeOp(string nick,string hostname, string channel, string user)
+{
+    struct schannel* _chan = &channels.find(channel)->second;
+    _chan->ops.erase(user);
+}
+
+void IRCBot::OnVoice(string nick,string hostname, string channel, string user)
+{
+    struct schannel* _chan = &channels.find(channel)->second;
+    _chan->peons.insert(user);
+}
+
+void IRCBot::OnDeVoice(string nick,string hostname, string channel, string user)
+{
+    struct schannel* _chan = &channels.find(channel)->second;
+    _chan->peons.erase(user);
+}
+
+void IRCBot::OnTopic (string nick, string hostname, string args)
+{
+    string target = args.substr(0, args.find(' '));
+    string topic = args.substr(target.length()+2);
+    channels.find(target)->second.topic = topic;
+}
+
+void IRCBot::OnInitialTopic (string args)
+{
+    vector<string> tokens = Common::split(args, ' ');
+    string topic = args.substr(args.find(':')+1);
+    channels.find(tokens[1])->second.topic = topic;
+
+}
+
+void IRCBot::OnInitialUsers (string args)
+{
+    vector<string> tokens = Common::split(args, ' ');
+    struct schannel* chan = &channels.find(tokens[2])->second;
+    for (int i = 3; i < (int)tokens.size(); i++)
+    {
+        if (tokens[i][0] == ':')
+            tokens[i] = tokens[i].substr(1);
+
+        if (tokens[i][0] == '@')
+        {
+            tokens[i] = tokens[i].substr(1);
+            chan->ops.insert(tokens[i]);
+
+        }
+        else if (tokens[i][0] == '+')
+        {
+            tokens[i] = tokens[i].substr(1);
+            chan->peons.insert(tokens[i]);
+        }
+
+        chan->users.insert(tokens[i]);
+    }
 }
 
 void IRCBot::OnNickInUse(string nick)
@@ -269,4 +462,29 @@ string IRCBot::Color(string text, string fg, string bg)
 string IRCBot::Bold(string text)
 {
     return BOLD + text + BOLD;
+}
+
+void IRCBot::ChanInfo (string c)
+{
+    struct schannel chan = channels.find(c)->second;
+    Privmsg(c, "Channel information for "+chan.name);
+    Privmsg(c, Bold("Modes: ") +  "n/a" + chan.modes);
+    Privmsg(c, Bold("Topic: ") + chan.topic);
+
+    set<string>::iterator it;
+    string u = "";
+    for (it = chan.ops.begin(); it != chan.ops.end(); it++)
+        u += *it+" ";
+    Privmsg(c, Bold("Ops: ") + u);
+
+    u = "";
+    for (it = chan.peons.begin(); it != chan.peons.end(); it++)
+        u += *it+" ";
+    Privmsg(c, Bold("Voice: ") + u);
+
+    u = "";
+    for (it = chan.users.begin(); it != chan.users.end(); it++)
+        u += *it+" ";
+    Privmsg(c, Bold("Users: ") + u);
+
 }

@@ -11,6 +11,8 @@ using namespace std;
 #include <string.h>
 #include <stdlib.h>
 #include <vector>
+#include <map>
+#include <set>
 
 #include "common.h"
 
@@ -37,6 +39,17 @@ using namespace std;
 #define COLOR "\x03"
 #define BOLD "\x02"
 
+struct schannel {
+    string name;
+    string modes;
+    string topic;
+    set<string> ops;
+    set<string> peons;
+    set<string> users;
+
+};
+
+typedef map<string, schannel> channel_map;
 
 class IRCBot
 {
@@ -68,16 +81,17 @@ public:
     string Bold(string text);
 
 private:
+    int server_socket;
+
     bool connected;
+    bool performed;
 
     string nick;
     string user;
     string server;
     string port;
 
-    int server_socket;
-
-    bool performed;
+    channel_map channels;
 
     void OnPing(string ping_id);
     void OnPrivmsg(string nick, string hostname, string args);
@@ -86,7 +100,17 @@ private:
     void OnNotice(string nick, string hostname, string args);
     void OnKick(string nick, string hostname, string args);
     void OnNickInUse(string nick);
+    void OnInitialTopic(string args);
+    void OnTopic(string nick, string hostname, string args);
+    void OnInitialUsers(string args);
+    void OnMode(string nick,string hostname, string args);
+    void OnOp(string nick,string hostname, string channel, string user);
+    void OnDeOp(string nick,string hostname, string channel, string user);
+    void OnVoice(string nick,string hostname, string channel, string user);
+    void OnDeVoice(string nick,string hostname, string channel, string user);
+    void OnQuit(string nick, string hostname, string args);
 
+    void ChanInfo(string c);
 };
 
 #endif // IRCBOT_H
