@@ -40,10 +40,8 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ircbot.cpp \
-		main.cpp 
-OBJECTS       = ircbot.o \
-		main.o
+SOURCES       = $(shell ls *.cpp)
+OBJECTS       = $(SOURCES:%.cpp=%.o)
 DESTDIR       = 
 TARGET        = ircbot
 
@@ -89,6 +87,9 @@ distclean: clean
 check: first
 
 ####### Compile
+
+%.o: %.c %.h
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 ircbot.o: ircbot.cpp ircbot.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ircbot.o ircbot.cpp

@@ -4,6 +4,11 @@ IRCBot::IRCBot()
 {
 }
 
+IRCBot::~IRCBot()
+{
+    Quit("IRC Bot destroyed.");
+}
+
 IRCBot::IRCBot(string nick, string user, string server, string port)
 {
     setNick(nick);
@@ -17,7 +22,7 @@ IRCBot::IRCBot(string nick, string user, string server, string port)
 
 void IRCBot::Connect()
 {
-    cout << "Connecting to " << this->server << ":" << this->port << " as " << this->nick << endl;
+    cout << "Connecting to " << this->server << ":" << this->port << " as " << this->nick << "... " << endl;
 
     int sockfd;
     int temp;
@@ -69,6 +74,7 @@ void IRCBot::Connect()
     freeaddrinfo(result);           /* No longer needed */
 
 
+    cout << "Connected." << endl;
     this->connected = true;
     server_socket = sockfd;
 
@@ -89,28 +95,41 @@ void IRCBot::Run()
 {
     Login();
 
-    char buf[1024];
+    char buf[BUFSIZE];
 
-    memset(buf, 0, 1024);
-    while (recv(server_socket, buf, 1024, 0) > 0)
+
+    memset(buf, 0, BUFSIZE);
+
+    string dangling_msg = "";
+
+    while (recv(server_socket, buf, BUFSIZE, 0) > 0)
     {
-        string msg(buf);
+        string msg = dangling_msg + string(buf);
+        dangling_msg = "";
 
-        do
+        vector<string> msg1 = Common::split(msg, '\r');
+
+        for (int i = 0; i < (int)msg1.size(); i++)
         {
-            string msg1 = msg.substr(0, msg.find(CRLF, 0));
-            Parse(msg1);
-            if (msg.length() - msg1.length() > 2)
-                msg = msg.substr(msg1.length()+2);
-            else
-                break;
+            if (msg1[i][0] == '\n')
+                msg1[i] = msg1[i].substr(1);
+            if (!msg1[i].empty())
+            {
+                // handle case when we didn't get the whole line
+                if (i == msg1.size()-1 && msg1[i][msg1[i].length()-1] != '\n')
+                {
+                    dangling_msg = msg1[i];
+                    break;
+                }
+                Parse(msg1[i]);
+            }
         }
-        while (msg.length() > 1);
 
-        memset(buf, 0, 1024);
+        memset(buf, 0, BUFSIZE);
     }
 
     cout << "Disconnected from server" << endl;
+    this->connected = false;
 }
 
 void IRCBot::Parse (string msg)
@@ -118,15 +137,34 @@ void IRCBot::Parse (string msg)
     cout << "< " << msg << endl;
 
     if (msg.substr(0, 4) == "PING")
-    {
-        Ping(msg.substr(5));
-    }
+        OnPing(msg.substr(5));
+
     else if (msg.substr(0, 1) == ":")
     {
-        if (!performed)
-            Perform();
-    }
+        // parse message
+        vector<string> tokens = Common::split(msg, ' ');
+        string nick, hostmask;
 
+        if (tokens[0].find('!') != tokens[0].npos)
+        {
+            vector<string> usermask = Common::split(tokens[0].substr(1), '!');
+            nick = usermask[0];
+            hostmask = usermask[1];
+        }
+
+        string event = tokens[1];
+
+        string args = msg.substr(tokens[0].length()+tokens[1].length()+2);
+
+        if (event == "PRIVMSG")
+            OnPrivmsg(nick, hostmask, args);
+        else if (event == "JOIN")
+            OnJoin(nick, hostmask, args);
+        else if (event == "NOTICE")
+            OnNotice(nick, hostmask, args);
+        else if (event == "433")
+            OnNickInUse(tokens[3]);
+    }
 }
 
 void IRCBot::Login ()
@@ -140,7 +178,7 @@ void IRCBot::Login ()
 }
 
 
-void IRCBot::Ping (string ping_id)
+void IRCBot::OnPing (string ping_id)
 {
     string s("PONG ");
     s += ping_id;
@@ -163,5 +201,59 @@ void IRCBot::Join(string channel, string key)
         s.append(" "+key);
 
     Send(s);
+}
 
+void IRCBot::Privmsg(string target, string message)
+{
+    string s = "PRIVMSG "+target+" :"+message;
+
+    Send(s);
+}
+
+void IRCBot::OnPrivmsg(string nick, string hostmask, string args)
+{
+    string target = args.substr(0, args.find(' '));
+    string message = args.substr(target.length()+2);
+
+    if (target == "#othi" && message == "!botping")
+        Privmsg(target, nick+": Pong!");
+}
+
+void IRCBot::OnNotice(string nick, string hostmask, string args)
+{
+    if (!performed)
+        Perform();
+}
+
+
+void IRCBot::OnJoin(string nick, string hostname, string args)
+{
+    string chan = args;
+
+    Privmsg(chan, "Hi "+nick+"!");
+}
+
+void IRCBot::OnNickInUse(string nick)
+{
+    Nick(nick+"_");
+}
+
+void IRCBot::Nick(string newnick)
+{
+    this->nick = newnick;
+    Send("NICK "+this->nick);
+}
+
+void IRCBot::Quit(string message)
+{
+    string s = "QUIT :"+message;
+
+    Send(s);
+
+    Disconnect();
+}
+
+void IRCBot::Disconnect()
+{
+    close(server_socket);
 }

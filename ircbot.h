@@ -10,13 +10,18 @@ using namespace std;
 #include <strings.h>
 #include <string.h>
 #include <stdlib.h>
+#include <vector>
+
+#include "common.h"
 
 #define CRLF "\r\n"
+#define BUFSIZE 512
 
 class IRCBot
 {
 public:
     IRCBot();
+    ~IRCBot();
     IRCBot(string nick, string user, string server, string port);
 
     void setNick(string nick) { this->nick = nick; }
@@ -29,10 +34,25 @@ public:
     void Send(string msg);
     void Run();
     void Parse(string msg);
+    void Disconnect();
+
     void Login();
-    void Ping(string ping_id);
     void Perform();
+    void Privmsg(string target, string message);
     void Join(string channel, string key = "");
+    void Nick(string newnick);
+    void Quit(string message);
+
+    void OnPing(string ping_id);
+    void OnPrivmsg(string nick, string hostname, string args);
+    void OnJoin(string nick, string hostname, string args);
+    void OnPart(string nick, string hostname, string args);
+    void OnNotice(string nick, string hostname, string args);
+    void OnKick(string nick, string hostname, string args);
+    void OnNickInUse(string nick);
+
+
+
 private:
     bool connected;
 
