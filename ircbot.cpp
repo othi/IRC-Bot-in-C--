@@ -234,6 +234,9 @@ void IRCBot::OnPrivmsg(string nick, string hostmask, string args)
 
     else if (message == ".chaninfo")
         ChanInfo(target);
+
+    else if (message.substr(0, 4) == ".raw")
+	Send(message.substr(5));
 }
 
 void IRCBot::OnNotice(string nick, string hostmask, string args)
@@ -270,9 +273,11 @@ void IRCBot::OnJoin(string nick, string hostname, string args)
 void IRCBot::OnPart(string nick, string hostname, string args)
 {
     vector<string> tokens = Common::split(args, ' ');
-    string chan = tokens[0];
+    string chan = tokens[0].substr(1);
 
-    string message = args.substr(chan.length()+2);
+    string message = "";
+    if (args.length() > chan.length()+1)
+        message = args.substr(chan.length()+2);
 
     if (nick == this->nick)
     {
