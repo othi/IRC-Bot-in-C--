@@ -3,6 +3,8 @@
 
 using namespace std;
 
+class IRCBot;
+
 #include <string>
 #include <iostream>
 #include <sys/select.h>
@@ -15,6 +17,7 @@ using namespace std;
 #include <set>
 
 #include "common.h"
+#include "apiserver.h"
 
 #define CRLF "\r\n"
 #define BUFSIZE 512
@@ -56,7 +59,7 @@ class IRCBot
 public:    
     IRCBot();
     ~IRCBot();
-    IRCBot(string nick, string user, string server, string port);
+    IRCBot(APIServer* api);
 
     void setNick(string nick) { this->nick = nick; }
     void setUser(string user) { this->user = user; }
@@ -65,7 +68,9 @@ public:
     void setPort(string port) { this->port = port; }
 
     void Connect();
+    int ConnectToIRC();
     void Send(string msg);
+    void Raw(string msg);
     void Run();
     void Parse(string msg);
     void Disconnect();
@@ -82,6 +87,8 @@ public:
 
 private:
     int server_socket;
+
+    APIServer* api;
 
     bool connected;
     bool performed;

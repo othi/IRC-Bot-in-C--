@@ -9,18 +9,22 @@ IRCBot::~IRCBot()
     Quit("IRC Bot destroyed.");
 }
 
-IRCBot::IRCBot(string nick, string user, string server, string port)
+IRCBot::IRCBot(APIServer* api)
 {
-    setNick(nick);
-    setUser(user);
-    setServer(server);
-    setPort(port);
-
+    this->api = api;
+    api->SetBot(this);
     this->connected = false;
     this->performed = false;
 }
 
 void IRCBot::Connect()
+{
+    server_socket = ConnectToIRC();
+
+    Run();
+}
+
+int IRCBot::ConnectToIRC()
 {
     cout << "Connecting to " << this->server << ":" << this->port << " as " << this->nick << "... " << endl;
 
@@ -76,27 +80,29 @@ void IRCBot::Connect()
 
     cout << "Connected." << endl;
     this->connected = true;
-    server_socket = sockfd;
 
-    Run();
+    return sockfd;
 }
 
 void IRCBot::Send (string msg)
 {
     msg.append(CRLF);
+    Raw(msg);
+}
+
+void IRCBot::Raw(string msg)
+{
     if (send(server_socket, msg.c_str(), msg.length(), 0) == (int) msg.length())
         cout << "> " << msg;
     else
         cout << "Message not sent completely: " << msg;
 }
 
-
 void IRCBot::Run()
 {
     Login();
 
     char buf[BUFSIZE];
-
 
     memset(buf, 0, BUFSIZE);
 
@@ -135,6 +141,8 @@ void IRCBot::Run()
 void IRCBot::Parse (string msg)
 {
     cout << "< " << msg << endl;
+
+    api->SendRawToClients(msg+CRLF);
 
     if (msg.substr(0, 4) == "PING")
         OnPing(msg.substr(5));
@@ -273,11 +281,11 @@ void IRCBot::OnJoin(string nick, string hostname, string args)
 void IRCBot::OnPart(string nick, string hostname, string args)
 {
     vector<string> tokens = Common::split(args, ' ');
-    string chan = tokens[0].substr(1);
-
-    string message = "";
-    if (args.length() > chan.length()+1)
-        message = args.substr(chan.length()+2);
+    string chan;
+    if (tokens[0][0] == ':')
+        chan = tokens[0].substr(1);
+    else
+        chan = tokens[0];
 
     if (nick == this->nick)
     {
