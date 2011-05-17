@@ -32,8 +32,8 @@ void* createAPIThread (void* api)
 void* createBotThread (void* api)
 {
     IRCBot* bot = new IRCBot((APIServer*) api);
-    bot->setNick("othibot");
-    bot->setUser("othibot");
+    bot->setNick("chrissibot");
+    bot->setUser("chrissibot");
     bot->setServer("irc.gamesurge.net");
     bot->setPort("6667");
 

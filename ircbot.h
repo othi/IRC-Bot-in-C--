@@ -68,7 +68,7 @@ public:
     void setPort(string port) { this->port = port; }
 
     void Connect();
-    int ConnectToIRC();
+  
     void Send(string msg);
     void Raw(string msg);
     void Run();
@@ -85,6 +85,8 @@ public:
     string Color(string text, string fg, string bg = "");
     string Bold(string text);
 
+	int ConnectToIRC();
+	channel_map channels;
 private:
     int server_socket;
 
@@ -98,7 +100,7 @@ private:
     string server;
     string port;
 
-    channel_map channels;
+    
 
     void OnPing(string ping_id);
     void OnPrivmsg(string nick, string hostname, string args);

@@ -210,7 +210,8 @@ void IRCBot::OnPing (string ping_id)
 
 void IRCBot::Perform()
 {
-    Join("#othi");
+    
+	Join("#chrissibot");
     performed = true;
 }
 
