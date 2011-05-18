@@ -110,9 +110,10 @@ void APIServer::Run()
                     {
                         close(i);
                         perror("recv failed ->");
-                        exit(5);
+                        FD_CLR(i, &db);
+
                     }
-                    if (bytes_read == 0) // client disconnected
+                    else if (bytes_read == 0) // client disconnected
                     {
                         close(i);
                         FD_CLR(i, &db); // remove from set
@@ -140,7 +141,6 @@ void APIServer::Run()
                         }
                         else
                             bot->Raw(buf);
-	
                     }
                 }
             }
@@ -173,33 +173,29 @@ void APIServer::interpret(string s) {
         cout << s << endl;
 	vector<string> tokens = Common::split(s, ' ');
 	cout << "command "+tokens[0]+" from client(GUI) received." << endl;
-	unsigned int i;
-	if(!this->guimode) 
-		i = 2;
-	else 
-		i = 0;
-	
-		if(tokens[i]=="join") {
-		if(tokens.size()==(i+2))
-			this->bot->Join(tokens[i+1]);
+
+                if(tokens[0]=="join") {
+                if(tokens.size()==(2))
+                        this->bot->Join(tokens[1]);
 		else 
                         answer("You have to specify a channel",tokens[1],NULL);
-		if(tokens.size()==(i+3))
-			this->bot->Join(tokens[i+1],tokens[i+2]);
+                if(tokens.size()==(3))
+                        this->bot->Join(tokens[1],tokens[2]);
 		}
 	
-	else if(tokens[i]=="nick") {
-		if(tokens.size()==(i+2))
-			this->bot->Nick(tokens[i+1]);
+        else if(tokens[0]=="changenick") {
+                if(tokens.size()==(2))
+                        this->bot->Nick(tokens[1]);
 		else 
-                        answer("You have to specify a channel",tokens[1],NULL);
+                        answer("You have to specify a nickname",tokens[1],NULL);
 	}
-	else if(tokens[i]=="killbot") {
-		if(tokens.size()==(i+2))
-			this->bot->killbot();
-		else 
-                        answer("You have to specify a channel",tokens[1],NULL);
-	}
+        else if(tokens[0]=="killbot") {
+			this->bot->killbot();	
+        }
+        else if(tokens[0]=="part") {
+            if(tokens.size()==(2))
+                        this->bot->Part(tokens[1]);
+        }
 
 }
 

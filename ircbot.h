@@ -79,6 +79,7 @@ public:
     void Perform();
     void Privmsg(string target, string message);
     void Join(string channel, string key = "");
+    void Part(string channel);
     void Nick(string newnick);
     void Quit(string message);
 

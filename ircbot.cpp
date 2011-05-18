@@ -225,6 +225,12 @@ void IRCBot::Join(string channel, string key)
 
     Send(s);
 }
+void IRCBot::Part(string channel)
+{
+    string s;
+    s = "PART "+channel;
+    Send(s);
+}
 
 void IRCBot::Privmsg(string target, string message)
 {
@@ -466,7 +472,7 @@ void IRCBot::Disconnect()
 }
 void IRCBot::killbot() {
 	this->Disconnect();
-    exit(0);
+        exit(0);
 }
 
 string IRCBot::Color(string text, string fg, string bg)
