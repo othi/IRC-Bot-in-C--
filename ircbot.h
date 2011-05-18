@@ -74,7 +74,7 @@ public:
     void Run();
     void Parse(string msg);
     void Disconnect();
-
+	void killbot();
     void Login();
     void Perform();
     void Privmsg(string target, string message);

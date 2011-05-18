@@ -464,6 +464,10 @@ void IRCBot::Disconnect()
 {
     close(server_socket);
 }
+void IRCBot::killbot() {
+	this->Disconnect();
+    exit(0);
+}
 
 string IRCBot::Color(string text, string fg, string bg)
 {

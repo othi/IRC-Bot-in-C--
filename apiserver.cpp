@@ -30,7 +30,7 @@ void APIServer::Run()
     struct sockaddr_in client;
 
     int clientfd, bytes_read;
-	
+	string trigger;
 
 	//weil chrissi failed und es nicht hinbekommt buf[0] mit "?" oder nem andern const char* zu vergleichen muss er nun nen string anlegen :(
 	string temp;
@@ -121,30 +121,25 @@ void APIServer::Run()
                     }
                     else // client sends a message
                     {
-						temp = buf;
-						
-						if(temp == "sup.i am a gui and no chat client.") this->guimode = true;
-						if(temp.substr(0,4)!="QUIT" && temp.substr(0,4)!="PONG" && !this->guimode) {
-							vector<string> tokens = Common::split(temp, ' ');
-							if(tokens.size()>2) {
-								// temp = (string)tokens[2];
-								// temp = temp.substr(0,2); // hier stirbt er grad wegen file descriptor...
-								
-								if(temp==":?") {
-									tokens[2]=tokens[2].substr(2);
-									this->interpret(tokens);
-								}
-							
-							else
-								bot->Raw(buf);
-							}
-
-						}
-						else if(guimode) {
-							cout << "command from client received." << endl;
-							vector<string> tokens = Common::split(temp, ' ');
-							this->interpret(tokens);
-						}
+                        temp = (string)buf;
+                       // if(temp == "sup.i am a gui and no chat client.")
+                        this->guimode = true;
+                        /*if(temp.substr(0,4)!="QUIT" && temp.substr(0,4)!="PONG" && !this->guimode) {
+                         vector<string> tokens = Common::split(temp, ' ');
+                         trigger.clear();
+                         trigger.append(tokens[2]);
+                         if(tokens[2].substr(1,2)=="?") {
+                         cout << "command "+tokens[2].substr(1)+" from client(chatclient) received." << endl;
+                         tokens[2]=tokens[2].substr(2);
+                         this->interpret(tokens);
+                         }
+                           else*/
+                        //}
+                        if(guimode) {
+                            this->interpret(temp);
+                        }
+                        else
+                            bot->Raw(buf);
 	
                     }
                 }
@@ -174,7 +169,10 @@ void APIServer::SendRawToClients (string message)
     }
 }
 
-void APIServer::interpret(vector<string> tokens) {
+void APIServer::interpret(string s) {
+        cout << s << endl;
+	vector<string> tokens = Common::split(s, ' ');
+	cout << "command "+tokens[0]+" from client(GUI) received." << endl;
 	unsigned int i;
 	if(!this->guimode) 
 		i = 2;
@@ -185,7 +183,7 @@ void APIServer::interpret(vector<string> tokens) {
 		if(tokens.size()==(i+2))
 			this->bot->Join(tokens[i+1]);
 		else 
-			answer("You have to specify a channel",tokens[1]);
+                        answer("You have to specify a channel",tokens[1],NULL);
 		if(tokens.size()==(i+3))
 			this->bot->Join(tokens[i+1],tokens[i+2]);
 		}
@@ -194,13 +192,22 @@ void APIServer::interpret(vector<string> tokens) {
 		if(tokens.size()==(i+2))
 			this->bot->Nick(tokens[i+1]);
 		else 
-			answer("You have to specify a channel",tokens[1]);
+                        answer("You have to specify a channel",tokens[1],NULL);
 	}
+	else if(tokens[i]=="killbot") {
+		if(tokens.size()==(i+2))
+			this->bot->killbot();
+		else 
+                        answer("You have to specify a channel",tokens[1],NULL);
+	}
+
 }
 
-void APIServer::answer(string message,string target=false) {
+void APIServer::answer(string message,string target=false,string errorcode="0") {
 	if(this->guimode) {
-		this->SendRawToClients("message");
+		this->SendRawToClients(errorcode+";;;"+"message");
 	}
 	else this->SendRawToClients("Master!Master@universe.net PRIVMSG "+target+" :"+message);
 }
+
+

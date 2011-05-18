@@ -21,9 +21,8 @@ public:
     void SetBot (IRCBot* bot) { this->bot = bot; }
     void Run();
     void SendRawToClients (string message);
-	void interpret(vector<string> buf);
-	void answer(string message,string target);
-private:
+	void interpret(string s);
+	void answer(string message,string target,string errorcode);
     IRCBot* bot;
     fd_set db;
     int server_socket;
