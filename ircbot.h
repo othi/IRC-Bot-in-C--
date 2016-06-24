@@ -62,6 +62,7 @@ public:
     IRCBot(APIServer* api);
 
     void setNick(string nick) { this->nick = nick; }
+    void setPassword(string password) { this->password = password; }
     void setUser(string user) { this->user = user; }
 
     void setServer(string server) { this->server = server; }
@@ -97,6 +98,7 @@ private:
     bool performed;
 
     string nick;
+    string password;
     string user;
     string server;
     string port;

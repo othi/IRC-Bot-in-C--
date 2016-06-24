@@ -192,6 +192,9 @@ void IRCBot::Parse (string msg)
 void IRCBot::Login ()
 {
     string s;
+    s = "PASS " + this->password;
+    Send(s);
+
     s = "NICK " + this->nick;
     Send(s);
 

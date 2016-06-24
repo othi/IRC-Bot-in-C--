@@ -8,6 +8,7 @@ class APIServer;
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
+#include <unistd.h>
 
 #define MAX_CLIENTS 1000
 
